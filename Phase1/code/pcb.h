@@ -9,6 +9,7 @@ typedef struct PCB{
     int running_time;
     int remaining_time;
     int start_time;
+    int memsize;
     int cont_time;
     int stop_time;
     int last_stop_time;  // Tracks the last stop time for waiting calculation

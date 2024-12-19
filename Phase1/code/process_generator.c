@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
         }
 
         PCB process;
-        sscanf(line,"%d %d %d %d", &process.id, &process.arrival_time, &process.running_time, &process.priority);
+        sscanf(line,"%d %d %d %d %d", &process.id, &process.arrival_time, &process.running_time, &process.priority,&process.memsize);
         int result = Queue_Enqueue(processes_queue, process);    
     }
     fclose(fptr);
