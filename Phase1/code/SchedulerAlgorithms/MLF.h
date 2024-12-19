@@ -168,7 +168,9 @@ void ImplementMLFQ(int msgqueue_id, int quantum, int num_of_processes, Queue_pro
                             }
                             else
                             {
-                                sleep(SentRunTime);
+                                //sleep(SentRunTime);
+                                int sleep=getClk()+SentRunTime;
+                                while(getClk()<sleep){}
                                 kill(process_pid, SIGSTOP); // actualy stops the process
                                 process_table[DequeuedProcess.id-1].remaining_time -= SentRunTime; // decrementing the remaining run time
                                 printf("A process has been stopped at time %d with remaining time %d\n", getClk(), process_table[DequeuedProcess.id-1].remaining_time);
@@ -181,7 +183,9 @@ void ImplementMLFQ(int msgqueue_id, int quantum, int num_of_processes, Queue_pro
                             write_schedulerlog_process_resumed(fptr, getClk(), process_table[DequeuedProcess.id-1].id, process_table[DequeuedProcess.id-1].arrival_time, process_table[DequeuedProcess.id-1].running_time, process_table[DequeuedProcess.id-1].remaining_time, waitTime);
                             int stat_loc;
                             kill(process_table[DequeuedProcess.id-1].pid, SIGCONT);
-                            sleep(SentRunTime);
+                            //sleep(SentRunTime);
+                            int sleep=getClk()+SentRunTime;
+                            while(getClk()<sleep){}
                             kill(process_table[DequeuedProcess.id-1].pid, SIGSTOP);
                             process_table[DequeuedProcess.id-1].remaining_time -= SentRunTime; // decrementing the remaining run time
                             printf("A process has been stopped at time %d with remaining time %d\n", getClk(), process_table[DequeuedProcess.id-1].remaining_time);
@@ -244,6 +248,8 @@ void ImplementMLFQ(int msgqueue_id, int quantum, int num_of_processes, Queue_pro
     int finish_time = getClk();
     freetime++;
     printf("All processes completed, producing the output file \n");
+    printf("the freetime is %d\n",freetime);
+    printf("--------------------------------------------------------------------------------------------");
     if(fptr!=NULL)
     {
         fclose(fptr);
