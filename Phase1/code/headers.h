@@ -18,6 +18,7 @@
 #include "Datastructures/Queue.h"
 #include "Datastructures/PriQueue.h"
 #include "Datastructures/CircularQueue.h"
+#include "Datastructures/Tree.h"
 
 #define SHKEY 300
 

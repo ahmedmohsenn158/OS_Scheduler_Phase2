@@ -1,4 +1,5 @@
 #include "headers.h"
+#include "Memory/buddy_allocation.h"
 #include"SchedulerAlgorithms/SJF.h"
 #include"SchedulerAlgorithms/MLF.h"
 #include"SchedulerAlgorithms/HPF.h"
@@ -15,6 +16,7 @@ PCB receive_message(int msgqueue_id){
         return message.process;
     }
 }
+
 int initialize_message_queue(){
     key_t msgqueue_key;
     int msgqueue_id;
@@ -55,6 +57,19 @@ int main(int argc, char *argv[])
 
     int msgqueue_id=initialize_message_queue();
     PriQueue* HPF = CreatePriQueue();
+
+    PCB pcb;
+    Tree * MemoryTree=CreateTree();
+    printTree(MemoryTree->root);
+
+    while(1){
+        int rec_val=receive_message_mlf(msgqueue_id,&pcb);
+        printf("%d\n",getRootSize(pcb.memsize));
+        allocateMemoryBlock(getRootSize(pcb.memsize),MemoryTree,pcb);
+        printFreeList(MemoryTree);
+        //printTree(MemoryTree->root);
+        //allocateMemory(getRootSize(pcb.memsize),MemoryTree->root,pcb);
+    }
 
     switch(scheduling_algorithm){
         case 0:{

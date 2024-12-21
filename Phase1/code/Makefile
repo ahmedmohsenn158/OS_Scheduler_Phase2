@@ -6,10 +6,12 @@ build:
 	gcc test_generator.c -o test_generator.out
 
 clean:
-	rm -f *.out  processes.txt
+	rm -f *.out
 
 all: clean build
 
+run:
+	./process_generator.out processes.txt -sch 0
 
 test_sjf:
 	./process_generator.out processes.txt -sch 0
