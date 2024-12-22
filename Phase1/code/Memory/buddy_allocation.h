@@ -137,7 +137,7 @@ bool allocateMemoryBlock(int nodesize, Tree* MemoryTree, PCB* pcb) {
 void deallocateMemoryBlock(PCB pcb, Tree* MemoryTree){
     TreeNode* NodePtr=NULL;
     int shift_index=0;
-
+    
     for (int i=0;i<MemoryTree->countallocated;i++){
         if (MemoryTree->allocated[i]->process_id==pcb.id && MemoryTree->allocated[i]!=NULL){
             NodePtr=MemoryTree->allocated[i];
@@ -152,6 +152,7 @@ void deallocateMemoryBlock(PCB pcb, Tree* MemoryTree){
     NodePtr->process_id=-1;
     shiftAllocatedList(MemoryTree,shift_index);
     
+    printf("Ana gowa\n");
     int foundSibling=-1;
     do{
         foundSibling = -1;
