@@ -134,56 +134,45 @@ bool allocateMemoryBlock(int nodesize, Tree* MemoryTree, PCB* pcb) {
     return true;
 }
 
-void deallocateMemoryBlock(PCB pcb, Tree* MemoryTree) {
-    TreeNode* NodePtr = NULL;
-    int shift_index = 0;
+void deallocateMemoryBlock(PCB pcb, Tree* MemoryTree){
+    TreeNode* NodePtr=NULL;
+    int shift_index=0;
 
-    for (int i = 0; i < MemoryTree->countallocated; i++) {
-        if (MemoryTree->allocated[i] != NULL && MemoryTree->allocated[i]->process_id == pcb.id) {
-            NodePtr = MemoryTree->allocated[i];
-            MemoryTree->allocated[i] = NULL;
-            shift_index = i;
+    for (int i=0;i<MemoryTree->countallocated;i++){
+        if (MemoryTree->allocated[i]->process_id==pcb.id && MemoryTree->allocated[i]!=NULL){
+            NodePtr=MemoryTree->allocated[i];
+            MemoryTree->allocated[i]=NULL;
+            shift_index=i;
             break;
-        }
+        } 
     }
 
-
-    printf("Freed %d bytes for process %d from %d to %d\n", pcb.memsize, pcb.id, NodePtr->start, NodePtr->end);
-    NodePtr->state = 0;
-    shiftAllocatedList(MemoryTree, shift_index);
-
-    while (1) {
-        int foundSibling = -1;
-
-        // Find the buddy block in the free list
-        for (int i = 0; i < MemoryTree->countfree; i++) {
-            if (MemoryTree->free[i] != NULL && MemoryTree->free[i]->start == NodePtr->buddyAddress) {
-                foundSibling = i;
+    printf("Freed %d bytes for process %d from %d to %d \n",pcb.memsize, pcb.id, NodePtr->start, NodePtr-> end);
+    NodePtr->state=0;
+    NodePtr->process_id=-1;
+    shiftAllocatedList(MemoryTree,shift_index);
+    
+    int foundSibling=-1;
+    do{
+        foundSibling = -1;
+        for (int i=0; i<MemoryTree->countfree; i++){
+            if(MemoryTree->free[i]->start == NodePtr->buddyAddress && MemoryTree->free[i]!=NULL){
+                foundSibling=i;
                 break;
             }
         }
 
-        // If no buddy block is found, add the current block to the free list and exit
-        if (foundSibling == -1) {
-            MemoryTree->free[MemoryTree->countfree++] = NodePtr;
-            break;
-        }
+        TreeNode*Parent;
 
-        // Merge with buddy block
-        TreeNode* BuddyNode = MemoryTree->free[foundSibling];
-        TreeNode* Parent = findParent(MemoryTree->root, NodePtr);
-
-        if (Parent == NULL) {
-            printf("Error: Parent node not found during merge\n");
-            break;
-        }
-
-        // Remove buddy from the free list
-        MemoryTree->free[foundSibling] = NULL;
-        shiftFreeList(MemoryTree, foundSibling);
-
-        // Merge children into the parent
-        DeleteChildren(Parent);
-        NodePtr = Parent; // Set the parent as the new node to check for further merging
-    }
+        if(foundSibling == -1){
+            MemoryTree->free[ MemoryTree->countfree++ ]=NodePtr;
+        } else {
+            Parent= findParent(MemoryTree->root, NodePtr);
+            MemoryTree->free[foundSibling]=NULL;
+            shiftFreeList(MemoryTree,foundSibling);
+            DeleteChildren(Parent);
+            NodePtr = Parent;
+        } 
+    } while (foundSibling!= -1);
+    
 }

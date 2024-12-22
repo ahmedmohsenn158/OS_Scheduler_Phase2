@@ -35,7 +35,7 @@ typedef struct Tree{
 // } Node_QueueTree;
 
 
-TreeNode* CreateNode(int Start, int End, int State){
+TreeNode* CreateTreeNode(int Start, int End, int State){
     TreeNode* node=(TreeNode*)malloc(sizeof(TreeNode));
     node->start=Start;
     node->end=End;
@@ -55,7 +55,7 @@ TreeNode* CreateNode(int Start, int End, int State){
 }
 
 Tree* CreateTree() {
-    TreeNode* rootnode = CreateNode(0, 1023, 0);
+    TreeNode* rootnode = CreateTreeNode(0, 1023, 0);
 
     Tree* MemoryTree = (Tree*)malloc(sizeof(Tree));
     MemoryTree->root = rootnode;
@@ -117,31 +117,38 @@ void createChildren(TreeNode* parent) {
 
     int half_size = parent->size / 2;
 
-    parent->left = malloc(sizeof(TreeNode));
-    if (parent->left == NULL) {
-        perror("Memory allocation failed for left child");
-        return;
-    }
-    parent->left->start = parent->start;
-    parent->left->end = parent->start + half_size - 1;
-    parent->left->size = half_size;
-    parent->left->state = 0;
-    parent->left->left = NULL;
-    parent->left->right = NULL;
+    // parent->left = malloc(sizeof(TreeNode));
+    // if (parent->left == NULL) {
+    //     perror("Memory allocation failed for left child");
+    //     return;
+    // }
+    // parent->left->start = parent->start;
+    // parent->left->end = parent->start + half_size - 1;
+    // parent->left->size = half_size;
+    // parent->left->state = 0;
+    // parent->left->process_id=-1;
+    // parent->left->left = NULL;
+    // parent->left->right = NULL;
 
-    parent->right = malloc(sizeof(TreeNode));
-    if (parent->right == NULL) {
-        perror("Memory allocation failed for right child");
-        free(parent->left); 
-        parent->left = NULL;
-        return;
-    }
-    parent->right->start = parent->start + half_size;
-    parent->right->end = parent->end;
-    parent->right->size = half_size;
-    parent->right->state = 0;
-    parent->right->left = NULL;
-    parent->right->right = NULL;
+    TreeNode* leftChild= CreateTreeNode(parent->start, parent->start + half_size -1, 0);
+
+    // parent->right = malloc(sizeof(TreeNode));
+    // if (parent->right == NULL) {
+    //     perror("Memory allocation failed for right child");
+    //     free(parent->left); 
+    //     parent->left = NULL;
+    //     return;
+    // }
+    // parent->right->start = parent->start + half_size;
+    // parent->right->end = parent->end;
+    // parent->right->size = half_size;
+    // parent->right->state = 0;
+    // parent->right->left = NULL;
+    // parent->right->right = NULL;
+
+    TreeNode* rightChild= CreateTreeNode(parent->start + half_size, parent->end, 0);
+    parent->left=leftChild;
+    parent->right=rightChild;
 
     parent->state = 1;
 }
