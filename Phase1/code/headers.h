@@ -79,7 +79,7 @@ int receive_message_mlf(int msgqueue_id, PCB *process){
         perror("Error in receiving the message\n");
         return -1;
     } else {
-        printf("Process %d with the following arrival time and priority received successfully: %d %d \n",message.process.id,message.process.arrival_time,message.process.priority);
+        printf("Process %d with the following arrival time and memory size received successfully: %d %d \n",message.process.id,message.process.arrival_time,message.process.memsize);
         *process=message.process;
         return 1;
     }
@@ -130,3 +130,10 @@ void write_schedulerlog_process_stopped(FILE*fptr,int time,int id,int arrival_ti
     fprintf(fptr, "At time %d process %d stopped arr %d total %d remain %d wait %d\n",time,id,arrival_time,running_time,remaining_time,waiting_time);
 }
 
+void write_memorylog_allocated (FILE*fptr, int time, int process_size, int id, int start_index, int end_index){
+    fprintf(fptr, "At time %d allocated %d bytes for process %d from %d to %d \n",time,process_size,id, start_index, end_index);
+}
+
+void write_memorylog_freed (FILE*fptr, int time, int process_size, int id, int start_index, int end_index){
+    fprintf(fptr, "At time %d freed %d bytes from process %d from %d to %d \n",time,process_size,id, start_index, end_index);
+}

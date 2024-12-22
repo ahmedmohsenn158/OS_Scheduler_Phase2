@@ -7,7 +7,9 @@ typedef struct TreeNode{
     int start;
     int end;
     struct TreeNode* left;
-    struct TreeNode* right;
+    struct TreeNode* right; 
+    int buddyNumber;
+    int buddyAddress;
     int state;
     int size;
     
@@ -16,7 +18,9 @@ typedef struct TreeNode{
 typedef struct Tree{
     TreeNode* root;
     TreeNode** free;
+    TreeNode** allocated;
     int countfree;
+    int countallocated;
 } Tree;
 
 // typedef struct Queue_TreeNode {
@@ -40,6 +44,12 @@ TreeNode* CreateNode(int Start, int End, int State){
     node->right=NULL;
     node->state=State;
     node->size= End-Start+1;
+    node->buddyNumber=Start/node->size;
+    if (node->buddyNumber % 2 ==1){
+        node->buddyAddress= Start - node->size;
+    } else {
+        node ->buddyAddress = Start + node->size;
+    }
 
     return node;
 }
@@ -58,6 +68,14 @@ Tree* CreateTree() {
 
     MemoryTree->free=freeList;
     MemoryTree->countfree=1;
+
+    TreeNode** AllocatedList = (TreeNode**)calloc(100, sizeof(TreeNode*));
+    for (int i=1;i<20;i++){
+        freeList[i]=NULL;
+    }
+
+    MemoryTree->allocated=AllocatedList;
+    MemoryTree->countallocated=0;
 
     return MemoryTree;
 }
@@ -99,7 +117,6 @@ void createChildren(TreeNode* parent) {
 
     int half_size = parent->size / 2;
 
-    // Create the left child
     parent->left = malloc(sizeof(TreeNode));
     if (parent->left == NULL) {
         perror("Memory allocation failed for left child");
@@ -112,11 +129,10 @@ void createChildren(TreeNode* parent) {
     parent->left->left = NULL;
     parent->left->right = NULL;
 
-    // Create the right child
     parent->right = malloc(sizeof(TreeNode));
     if (parent->right == NULL) {
         perror("Memory allocation failed for right child");
-        free(parent->left); // Clean up allocated left child
+        free(parent->left); 
         parent->left = NULL;
         return;
     }
@@ -127,17 +143,50 @@ void createChildren(TreeNode* parent) {
     parent->right->left = NULL;
     parent->right->right = NULL;
 
-    // Mark parent as split
     parent->state = 1;
 }
 
-void DeleteChildren(TreeNode*node){
-    free(node->right);
-    free(node->left);
+void DeleteChildren(TreeNode* node) {
+    if (node == NULL) {
+        return; // Safeguard against null pointers
+    }
 
-    node->right=NULL;
-    node->left=NULL;
+    // Recursively delete the subtrees
+    if (node->left != NULL) {
+        DeleteChildren(node->left);
+        free(node->left);
+        node->left = NULL; // Avoid dangling pointer
+    }
+
+    if (node->right != NULL) {
+        DeleteChildren(node->right);
+        free(node->right);
+        node->right = NULL; // Avoid dangling pointer
+    }
+
+    // Reset parent node state
+    node->state = 0;
+    node->process_id = -1;
 }
+
+
+TreeNode* findParent(TreeNode* root, TreeNode* child) {
+    if (root == NULL || child == NULL) {
+        return NULL; 
+    }
+
+    if (root->left == child || root->right == child) {
+        return root;
+    }
+
+    TreeNode* parent = findParent(root->left, child);
+    if (parent != NULL) {
+        return parent;
+    }
+
+    return findParent(root->right, child);
+}
+
 
 void updateState (int Process_id , TreeNode* node){
     node->process_id=Process_id;

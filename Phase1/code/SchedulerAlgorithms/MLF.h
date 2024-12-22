@@ -119,7 +119,7 @@ void ImplementMLFQ(int msgqueue_id, int quantum, int num_of_processes, Queue_pro
            
             if (MLFQ[counter]->count > 0)
             {
-                printf("--------------------------------- Bada2et Teshta8al----------------------- of queue %d\n", counter); // Debuging
+                printf("--------------------------------- Started Execution ----------------------- of queue %d\n", counter); // Debuging
                 do
                 {
                     if (Queue_Dequeue_processData(MLFQ[counter], &DequeuedProcess))

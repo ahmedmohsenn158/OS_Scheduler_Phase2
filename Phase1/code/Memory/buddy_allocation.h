@@ -1,5 +1,6 @@
 #pragma once
 #include "../headers.h"
+#define FREE_LIST_SIZE 100
 
 int getRootSize(int size){
     for(int i=1024;i>0;i/=2){
@@ -7,12 +8,11 @@ int getRootSize(int size){
             return i;
         }
     }
+    return -1;
 }
 
-#define FREE_LIST_SIZE 100
-
 int isBlockAvailable(int nodesize, Tree* MemoryTree) {
-    for (int i = 0; i < FREE_LIST_SIZE; i++) {
+    for (int i = 0; i < MemoryTree->countfree; i++) {
         if (MemoryTree->free[i] != NULL && MemoryTree->free[i]->size == nodesize) {
             return i;
         }
@@ -55,26 +55,33 @@ void shiftFreeList(Tree* MemoryTree, int startIndex) {
     MemoryTree->free[--MemoryTree->countfree] = NULL;
 }
 
-void printFreeList(Tree*MemoryTree){
+void shiftAllocatedList(Tree* MemoryTree, int startIndex) {
+    for (int i = startIndex; i < MemoryTree->countallocated - 1; i++) {
+        MemoryTree->allocated[i] = MemoryTree->allocated[i + 1];
+    }
+    MemoryTree->allocated[--MemoryTree->countallocated] = NULL;
+}
+
+void printTreeList(TreeNode** array){
     for (int i=0;i<FREE_LIST_SIZE;i++){
-        if (MemoryTree->free[i]!=NULL){
+        if (array[i]!=NULL){
             printf("start: %d end: %d size: %d flag: %d process_id: %d\n", 
-            MemoryTree->free[i]->start,
-            MemoryTree->free[i]->end,MemoryTree->free[i]->size, 
-            MemoryTree->free[i]->state,
-            MemoryTree->free[i]->process_id);
+            array[i]->start,
+            array[i]->end,array[i]->size, 
+            array[i]->state,
+            array[i]->process_id);
         }
     }
 }
 
-bool allocateMemoryBlock(int nodesize, Tree* MemoryTree, PCB pcb) {
+bool allocateMemoryBlock(int nodesize, Tree* MemoryTree, PCB* pcb) {
     if (MemoryTree == NULL) {
         perror("Invalid MemoryTree structure");
         return false;
     }
 
-    if (MemoryTree->countfree == 0 || getRootSize(pcb.memsize)> largestBlockAvailable(MemoryTree)) {
-        printf("No space to allocate for process %d\n", pcb.id);
+    if (MemoryTree->countfree == 0 || getRootSize(pcb->memsize)> largestBlockAvailable(MemoryTree)) {
+        printf("No space to allocate for process %d\n", pcb->id);
         return false;
     }
 
@@ -84,18 +91,18 @@ bool allocateMemoryBlock(int nodesize, Tree* MemoryTree, PCB pcb) {
     while (i == -1 && retries < FREE_LIST_SIZE) {
         retries++;
         if (MemoryTree->countfree == 0) {
-            printf("No space to allocate after %d retries for process %d\n", retries, pcb.id);
+            printf("No space to allocate after %d retries for process %d\n", retries, pcb->id);
             return false;
         }
 
-        int index = smallestBlockAvailable(MemoryTree,pcb.memsize);
+        int index = smallestBlockAvailable(MemoryTree,pcb->memsize);
         if (index == -1) {
             perror("No smaller block available for splitting");
             return false;
         }
 
         TreeNode* ptr = MemoryTree->free[index];
-        shiftFreeList(MemoryTree, index); // Remove block from free list
+        shiftFreeList(MemoryTree, index); 
 
         createChildren(ptr);
 
@@ -104,7 +111,6 @@ bool allocateMemoryBlock(int nodesize, Tree* MemoryTree, PCB pcb) {
             return false;
         }
 
-        // Add new children to the free list
         MemoryTree->free[MemoryTree->countfree++] = ptr->left;
         MemoryTree->free[MemoryTree->countfree++] = ptr->right;
 
@@ -112,17 +118,72 @@ bool allocateMemoryBlock(int nodesize, Tree* MemoryTree, PCB pcb) {
     }
 
     if (i == -1) {
-        printf("Unable to allocate memory for process %d after %d retries\n", pcb.id, retries);
+        printf("Unable to allocate memory for process %d after %d retries\n", pcb->id, retries);
         return false;
     }
 
-    // Allocate the block
     TreeNode* ptr = MemoryTree->free[i];
-    shiftFreeList(MemoryTree, i); // Remove block from free list
+    shiftFreeList(MemoryTree, i); 
 
-    ptr->process_id = pcb.id;
+    ptr->process_id = pcb->id;
     ptr->state = 1;
+    pcb->start_memory_address=ptr->start;
+    MemoryTree-> allocated[MemoryTree->countallocated++] = ptr;
 
-    printf("Allocated Memory for process %d from %d to %d\n", pcb.id, ptr->start, ptr->end);
+    printf("Allocated Memory for process %d from %d to %d\n", pcb->id, ptr->start, ptr->end);
     return true;
+}
+
+void deallocateMemoryBlock(PCB pcb, Tree* MemoryTree) {
+    TreeNode* NodePtr = NULL;
+    int shift_index = 0;
+
+    for (int i = 0; i < MemoryTree->countallocated; i++) {
+        if (MemoryTree->allocated[i] != NULL && MemoryTree->allocated[i]->process_id == pcb.id) {
+            NodePtr = MemoryTree->allocated[i];
+            MemoryTree->allocated[i] = NULL;
+            shift_index = i;
+            break;
+        }
+    }
+
+
+    printf("Freed %d bytes for process %d from %d to %d\n", pcb.memsize, pcb.id, NodePtr->start, NodePtr->end);
+    NodePtr->state = 0;
+    shiftAllocatedList(MemoryTree, shift_index);
+
+    while (1) {
+        int foundSibling = -1;
+
+        // Find the buddy block in the free list
+        for (int i = 0; i < MemoryTree->countfree; i++) {
+            if (MemoryTree->free[i] != NULL && MemoryTree->free[i]->start == NodePtr->buddyAddress) {
+                foundSibling = i;
+                break;
+            }
+        }
+
+        // If no buddy block is found, add the current block to the free list and exit
+        if (foundSibling == -1) {
+            MemoryTree->free[MemoryTree->countfree++] = NodePtr;
+            break;
+        }
+
+        // Merge with buddy block
+        TreeNode* BuddyNode = MemoryTree->free[foundSibling];
+        TreeNode* Parent = findParent(MemoryTree->root, NodePtr);
+
+        if (Parent == NULL) {
+            printf("Error: Parent node not found during merge\n");
+            break;
+        }
+
+        // Remove buddy from the free list
+        MemoryTree->free[foundSibling] = NULL;
+        shiftFreeList(MemoryTree, foundSibling);
+
+        // Merge children into the parent
+        DeleteChildren(Parent);
+        NodePtr = Parent; // Set the parent as the new node to check for further merging
+    }
 }

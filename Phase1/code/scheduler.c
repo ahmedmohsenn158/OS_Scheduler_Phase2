@@ -1,5 +1,4 @@
 #include "headers.h"
-#include "Memory/buddy_allocation.h"
 #include"SchedulerAlgorithms/SJF.h"
 #include"SchedulerAlgorithms/MLF.h"
 #include"SchedulerAlgorithms/HPF.h"
@@ -62,14 +61,18 @@ int main(int argc, char *argv[])
     Tree * MemoryTree=CreateTree();
     printTree(MemoryTree->root);
 
-    while(1){
-        int rec_val=receive_message_mlf(msgqueue_id,&pcb);
-        printf("%d\n",getRootSize(pcb.memsize));
-        allocateMemoryBlock(getRootSize(pcb.memsize),MemoryTree,pcb);
-        printFreeList(MemoryTree);
-        //printTree(MemoryTree->root);
-        //allocateMemory(getRootSize(pcb.memsize),MemoryTree->root,pcb);
-    }
+    // while(1){
+    //     int rec_val=receive_message_mlf(msgqueue_id,&pcb);
+    //     printf("%d\n",getRootSize(pcb.memsize));
+    //     allocateMemoryBlock(getRootSize(pcb.memsize),MemoryTree,&pcb);
+    //     printf("%s \n", "Free List: ");
+    //     printTreeList(MemoryTree->free);
+
+    //     printf("\n%s \n","Allocated List: ");
+    //     printTreeList(MemoryTree->allocated);
+    //     //printTree(MemoryTree->root);
+    //     //allocateMemory(getRootSize(pcb.memsize),MemoryTree->root,pcb);
+    // }
 
     switch(scheduling_algorithm){
         case 0:{
@@ -96,11 +99,11 @@ int main(int argc, char *argv[])
 
         case 2: 
         {
-                CircularQueue *RRQueue = CreateCircularQueue();
-                int quantum = atoi(argv[3]); // Quantum passed as a command-line argument
-                Execute_RR(num_of_processes, msgqueue_id, RRQueue, quantum);
-                DestroyCircularQueue(RRQueue);
-                break;
+            CircularQueue *RRQueue = CreateCircularQueue();
+            int quantum = atoi(argv[3]); // Quantum passed as a command-line argument
+            Execute_RR(num_of_processes, msgqueue_id, RRQueue, quantum);
+            DestroyCircularQueue(RRQueue);
+            break;
         }
 
         case(3):{

@@ -19,6 +19,7 @@ typedef struct PCB{
     float turnaround_time;
     float weighted_turnaround_time;
     bool state;
+    int start_memory_address;
 }PCB;
 
 void initialize_pcb(PCB* process, int start_time){
