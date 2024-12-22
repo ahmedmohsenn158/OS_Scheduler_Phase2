@@ -42,7 +42,7 @@ void Execute_SJF(int num_of_processes, int msgqueue_id, PriQueue* readyqueue) {
             int node_size=getRootSize(pcb.memsize);
             allocateMemoryBlock(node_size,MemoryTree,&pcb);
             printTree(MemoryTree->root);
-            write_memorylog_allocated(fmemoryptr,pcb.arrival_time,pcb.memsize, pcb.id, pcb.start_memory_address,node_size+pcb.start_memory_address-1);
+            write_memorylog_allocated(fmemoryptr,getClk(),pcb.memsize, pcb.id, pcb.start_memory_address,node_size+pcb.start_memory_address-1);
             initialize_pcb(&pcb,getClk());
             write_schedulerlog_process_started(fptr,getClk(),pcb.id,pcb.arrival_time,pcb.running_time,pcb.remaining_time,pcb.response_time);
             int process_pid = fork();

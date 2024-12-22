@@ -151,8 +151,7 @@ void deallocateMemoryBlock(PCB pcb, Tree* MemoryTree){
     NodePtr->state=0;
     NodePtr->process_id=-1;
     shiftAllocatedList(MemoryTree,shift_index);
-    
-    printf("Ana gowa\n");
+
     int foundSibling=-1;
     do{
         foundSibling = -1;

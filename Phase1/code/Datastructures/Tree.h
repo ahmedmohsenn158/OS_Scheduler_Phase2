@@ -155,23 +155,21 @@ void createChildren(TreeNode* parent) {
 
 void DeleteChildren(TreeNode* node) {
     if (node == NULL) {
-        return; // Safeguard against null pointers
+        return; 
     }
 
-    // Recursively delete the subtrees
     if (node->left != NULL) {
         DeleteChildren(node->left);
         free(node->left);
-        node->left = NULL; // Avoid dangling pointer
+        node->left = NULL; 
     }
 
     if (node->right != NULL) {
         DeleteChildren(node->right);
         free(node->right);
-        node->right = NULL; // Avoid dangling pointer
+        node->right = NULL; 
     }
 
-    // Reset parent node state
     node->state = 0;
     node->process_id = -1;
 }
