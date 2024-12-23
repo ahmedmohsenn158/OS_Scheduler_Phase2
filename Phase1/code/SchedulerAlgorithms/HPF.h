@@ -70,7 +70,7 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
 
             if (running_process->pid == -1)  {
                 int node_size=getRootSize(message.memsize);
-                if(allocateMemoryBlock(node_size, MemoryTree, running_process)){   
+                if(allocateMemoryBlock(node_size, MemoryTree, running_process)){ 
                     initialize_pcb(running_process, getClk());
                     write_memorylog_allocated(fmemoryptr, getClk(),
                         running_process->memsize,
@@ -106,6 +106,7 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
                 // TODO: update cpu state
                 int time = getClk();
                 deallocateMemoryBlock(*running_process ,MemoryTree);
+                printf("Deallocated memory succesfully \n");
                 write_memorylog_freed(fmemoryptr, getClk(),
                     running_process->memsize,
                     running_process->id,
@@ -123,8 +124,7 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
                     running_process->weighted_turnaround_time);
                 running_process = NULL;
                 completed_processes++;
-                continue;
-                
+                continue;  
             }
         }
 
@@ -190,6 +190,7 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
 
     printf("All processes completed, producing the output file \n");
     fclose(fptr);
+    fclose(fmemoryptr);
     printf("The free time: %d \n", free_time);
     finalize_cpu_state(&cpu,process_count, free_time, getClk());
     write_schedulerprf(cpu.cpu_utilization, cpu.avg_wta, cpu.avg_waiting);

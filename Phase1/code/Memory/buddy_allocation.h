@@ -138,8 +138,8 @@ void deallocateMemoryBlock(PCB pcb, Tree* MemoryTree){
     TreeNode* NodePtr=NULL;
     int shift_index=0;
     
-    for (int i=0;i<MemoryTree->countallocated;i++){
-        if (MemoryTree->allocated[i]->process_id==pcb.id && MemoryTree->allocated[i]!=NULL){
+    for (int i = 0 ; i < MemoryTree->countallocated ; i++){
+        if ((MemoryTree->allocated[i]->process_id == pcb.id) && MemoryTree->allocated[i] != NULL){
             NodePtr=MemoryTree->allocated[i];
             MemoryTree->allocated[i]=NULL;
             shift_index=i;
