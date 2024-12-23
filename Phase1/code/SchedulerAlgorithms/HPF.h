@@ -69,7 +69,7 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
                 running_process->running_time);
 
             if (running_process->pid == -1)  {
-                int node_size=getRootSize(message.memsize);
+                int node_size=getRootSize(running_process->memsize);
                 if(allocateMemoryBlock(node_size, MemoryTree, running_process)){ 
                     initialize_pcb(running_process, getClk());
                     printTree(MemoryTree->root);
