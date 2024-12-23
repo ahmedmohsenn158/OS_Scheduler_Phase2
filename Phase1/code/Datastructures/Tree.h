@@ -80,6 +80,18 @@ Tree* CreateTree() {
     return MemoryTree;
 }
 
+void DestroyTree(TreeNode* root){
+    TreeNode* node = root;
+    if(!root){
+        return;
+    }
+
+    DestroyTree(root->left);
+    DestroyTree(root->right);
+
+    free(root);
+}
+
 // int Queue_Dequeue_TreeNode(Queue_TreeNode* q, TreeNode* item) 
 // {
 //     if (q == NULL || q->Head == NULL) {

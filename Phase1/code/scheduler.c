@@ -127,6 +127,6 @@ int main(int argc, char *argv[])
             break;
         }
     }
-
-   destroyClk(true);
+    DestroyTree(MemoryTree->root);
+    destroyClk(true);
 }
