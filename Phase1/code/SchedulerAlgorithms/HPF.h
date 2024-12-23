@@ -72,6 +72,7 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
                 int node_size=getRootSize(message.memsize);
                 if(allocateMemoryBlock(node_size, MemoryTree, running_process)){ 
                     initialize_pcb(running_process, getClk());
+                    printTree(MemoryTree->root);
                     write_memorylog_allocated(fmemoryptr, getClk(),
                         running_process->memsize,
                         running_process->id,
@@ -105,13 +106,6 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
             if(waitpid(running_process->pid, &status, WNOHANG) == running_process->pid){
                 // TODO: update cpu state
                 int time = getClk();
-                deallocateMemoryBlock(*running_process ,MemoryTree);
-                printf("Deallocated memory succesfully \n");
-                write_memorylog_freed(fmemoryptr, getClk(),
-                    running_process->memsize,
-                    running_process->id,
-                    running_process->start_memory_address,
-                    running_process->start_memory_address + getRootSize(running_process->memsize) -1);
                 finalize_pcb(running_process, getClk());
                 update_cpu_state(&cpu, running_process->weighted_turnaround_time, (running_process->turnaround_time - running_process->running_time));
                 write_schedulerlog_process_finished(fptr, time, 
@@ -122,6 +116,13 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
                     (running_process->turnaround_time - running_process->running_time), 
                     running_process->turnaround_time, 
                     running_process->weighted_turnaround_time);
+                deallocateMemoryBlock(*running_process ,MemoryTree);
+                printTree(MemoryTree->root);
+                write_memorylog_freed(fmemoryptr, getClk(),
+                    running_process->memsize,
+                    running_process->id,
+                    running_process->start_memory_address,
+                    running_process->start_memory_address + getRootSize(running_process->memsize) -1);
                 running_process = NULL;
                 completed_processes++;
                 continue;  
@@ -150,15 +151,24 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
 
             if (running_process->pid == -1) {
                 int time = getClk();
-                initialize_pcb(running_process, time);
-                write_schedulerlog_process_started(fptr, time, 
-                    running_process->id, 
-                    running_process->arrival_time, 
-                    running_process->running_time, 
-                    running_process->remaining_time, 
-                    running_process->response_time);
-                running_process->cont_time = getClk();
-                start_process(running_process);
+                int node_size=getRootSize(message.memsize);
+                if(allocateMemoryBlock(node_size, MemoryTree, running_process)){ 
+                    initialize_pcb(running_process, getClk());
+                    printTree(MemoryTree->root);
+                    write_memorylog_allocated(fmemoryptr, getClk(),
+                        running_process->memsize,
+                        running_process->id,
+                        running_process->start_memory_address,
+                        running_process->start_memory_address + node_size - 1);
+                    write_schedulerlog_process_started(fptr, getClk(), 
+                        running_process->id, 
+                        running_process->arrival_time, 
+                        running_process->running_time, 
+                        running_process->remaining_time, 
+                        running_process->response_time);
+                    running_process->cont_time = getClk();
+                    start_process(running_process);
+                }
             } else {
                 running_process->cont_time = getClk();
                 kill(running_process->pid, SIGCONT);
