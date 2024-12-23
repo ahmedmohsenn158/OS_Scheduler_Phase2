@@ -14,7 +14,10 @@ void start_process(PCB* running_process) {
 void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
 {
     CPU_State cpu=create_cpu_state();
+    Tree* MemoryTree= CreateTree();
     FILE* fptr;
+    FILE* fmemoryptr;
+    fmemoryptr = fopen("memory.log.txt", "w");
     fptr = fopen("scheduler.log.txt", "w");
 
     int timestep = getClk();
@@ -66,15 +69,24 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
                 running_process->running_time);
 
             if (running_process->pid == -1)  {
-                initialize_pcb(running_process, getClk());
-                write_schedulerlog_process_started(fptr, getClk(), 
-                    running_process->id, 
-                    running_process->arrival_time, 
-                    running_process->running_time, 
-                    running_process->remaining_time, 
-                    running_process->response_time);
-                running_process->cont_time = getClk();
-                start_process(running_process);
+                int node_size=getRootSize(message.memsize);
+                if(allocateMemoryBlock(node_size, MemoryTree, running_process)){ 
+                    initialize_pcb(running_process, getClk());
+                    printTree(MemoryTree->root);
+                    write_memorylog_allocated(fmemoryptr, getClk(),
+                        running_process->memsize,
+                        running_process->id,
+                        running_process->start_memory_address,
+                        running_process->start_memory_address + node_size - 1);
+                    write_schedulerlog_process_started(fptr, getClk(), 
+                        running_process->id, 
+                        running_process->arrival_time, 
+                        running_process->running_time, 
+                        running_process->remaining_time, 
+                        running_process->response_time);
+                    running_process->cont_time = getClk();
+                    start_process(running_process);
+                }
             } else {
                 running_process->cont_time = getClk();
                 kill(running_process->pid, SIGCONT);
@@ -104,10 +116,16 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
                     (running_process->turnaround_time - running_process->running_time), 
                     running_process->turnaround_time, 
                     running_process->weighted_turnaround_time);
+                deallocateMemoryBlock(*running_process ,MemoryTree);
+                printTree(MemoryTree->root);
+                write_memorylog_freed(fmemoryptr, getClk(),
+                    running_process->memsize,
+                    running_process->id,
+                    running_process->start_memory_address,
+                    running_process->start_memory_address + getRootSize(running_process->memsize) -1);
                 running_process = NULL;
                 completed_processes++;
-                continue;
-                
+                continue;  
             }
         }
 
@@ -133,15 +151,24 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
 
             if (running_process->pid == -1) {
                 int time = getClk();
-                initialize_pcb(running_process, time);
-                write_schedulerlog_process_started(fptr, time, 
-                    running_process->id, 
-                    running_process->arrival_time, 
-                    running_process->running_time, 
-                    running_process->remaining_time, 
-                    running_process->response_time);
-                running_process->cont_time = getClk();
-                start_process(running_process);
+                int node_size=getRootSize(message.memsize);
+                if(allocateMemoryBlock(node_size, MemoryTree, running_process)){ 
+                    initialize_pcb(running_process, getClk());
+                    printTree(MemoryTree->root);
+                    write_memorylog_allocated(fmemoryptr, getClk(),
+                        running_process->memsize,
+                        running_process->id,
+                        running_process->start_memory_address,
+                        running_process->start_memory_address + node_size - 1);
+                    write_schedulerlog_process_started(fptr, getClk(), 
+                        running_process->id, 
+                        running_process->arrival_time, 
+                        running_process->running_time, 
+                        running_process->remaining_time, 
+                        running_process->response_time);
+                    running_process->cont_time = getClk();
+                    start_process(running_process);
+                }
             } else {
                 running_process->cont_time = getClk();
                 kill(running_process->pid, SIGCONT);
@@ -173,6 +200,7 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
 
     printf("All processes completed, producing the output file \n");
     fclose(fptr);
+    fclose(fmemoryptr);
     printf("The free time: %d \n", free_time);
     finalize_cpu_state(&cpu,process_count, free_time, getClk());
     write_schedulerprf(cpu.cpu_utilization, cpu.avg_wta, cpu.avg_waiting);
