@@ -75,6 +75,10 @@ void ImplementMLFQ(int msgqueue_id, int quantum, int num_of_processes, Queue_pro
     int PCBUpdateCounter = 0;                // count of pcn initialised
     processData DequeuedProcess;
     int waitTime=0;
+    Tree* MemoryTree= CreateTree();
+    struct PCB tempPcb;
+    FILE* fmemoryptr;
+    fmemoryptr = fopen("memory.log.txt", "w");
     struct PCB *process_table = malloc(num_of_processes * sizeof(struct PCB));
     if (process_table == NULL) {
         perror("Failed to allocate memory for process_table");
@@ -103,6 +107,7 @@ void ImplementMLFQ(int msgqueue_id, int quantum, int num_of_processes, Queue_pro
             message.id=pcb.id;
             message.priority=pcb.priority;
             message.runningtime=pcb.running_time;
+            message.memsize=pcb.memsize;
                 //match dequeued process to the message id arrinal etc...
             if (EnqueueInCorrectQueue(MLFQ, message) == 0)
             {
@@ -120,118 +125,135 @@ void ImplementMLFQ(int msgqueue_id, int quantum, int num_of_processes, Queue_pro
             if (MLFQ[counter]->count > 0)
             {
                 printf("--------------------------------- Started Execution ----------------------- of queue %d\n", counter); // Debuging
-                do
-                {
-                    if (Queue_Dequeue_processData(MLFQ[counter], &DequeuedProcess))
+                    do
                     {
-                        printf("Process is dequeued\n");
-                        if (process_table[DequeuedProcess.id-1].id!=DequeuedProcess.id) // to handle if PCB is already initialised
+                        if (Queue_Peek_processData(MLFQ[counter], &DequeuedProcess))
                         {
-                            process_table[DequeuedProcess.id-1] = initialize_pcb_RR(DequeuedProcess, getClk());
-                            printf("Executing process %d with runtime %d\n", DequeuedProcess.id, DequeuedProcess.runningtime);
-                            waitTime=getClk()-process_table[DequeuedProcess.id-1].arrival_time;
-                            write_schedulerlog_process_started(fptr, getClk(), process_table[DequeuedProcess.id-1].id, process_table[DequeuedProcess.id-1].arrival_time, process_table[DequeuedProcess.id-1].running_time, process_table[DequeuedProcess.id-1].remaining_time, waitTime);
-                        }
-                        else
-                        {
-                            printf("Continuing to Execute process %d with remaining time %d\n", DequeuedProcess.id, process_table[DequeuedProcess.id-1].remaining_time);
-                        }
-                        if (process_table[DequeuedProcess.id-1].remaining_time < quantum-LocalRunTime) // to set the runtime to be sent to the Process forked
-                        {
-                            SentRunTime = process_table[DequeuedProcess.id-1].remaining_time;
-                        }
-                        else
-                        {
-                            SentRunTime = quantum;
-                        }
-                        // TODO fork proccess and wait for it to return the remaining time to be given is the smaller between the quantum and running time
-                        int process_pid;
-                        if(DequeuedProcess.runningtime==process_table[DequeuedProcess.id-1].remaining_time) // to check id the process is running for the first time to fork it 
-                        {
-                            int process_pid = fork();
-                            process_table[DequeuedProcess.id-1].pid=process_pid;
-                            if (process_pid < 0)
+                           printf("mem data size %d",DequeuedProcess.memsize);
+                            printf("Process is dequeued\n");
+                            if (process_table[DequeuedProcess.id-1].id!=DequeuedProcess.id) // to handle if PCB is already initialised
                             {
-                                perror("Error in forking the process");
-                                continue;
-                            }
-                            if (process_pid == 0)
-                            {
-                                char running_time[10];
-                                snprintf(running_time, sizeof(running_time), "%d", DequeuedProcess.runningtime);
-                                if(process_table[DequeuedProcess.id-1].remaining_time==process_table[DequeuedProcess.id-1].running_time)
+                                tempPcb = initialize_pcb_RR(DequeuedProcess,getClk());
+                                printf("mem pcb size %d",tempPcb.memsize);
+                                if(allocateMemoryBlock(getRootSize(tempPcb.memsize),MemoryTree,&tempPcb))
                                 {
-                                    execl("process.out", "process.out", running_time, NULL);
+                                    printf("Process is allocated in memmory\n");
+                                    Queue_Dequeue_processData(MLFQ[counter], &DequeuedProcess);
+                                    process_table[DequeuedProcess.id-1] = tempPcb;   //!initialize_pcb_RR(DequeuedProcess, getClk());
+                                    printf("Executing process %d with runtime %d\n", DequeuedProcess.id, DequeuedProcess.runningtime);
+                                    write_memorylog_allocated(fmemoryptr,getClk(),process_table[DequeuedProcess.id-1].memsize, process_table[DequeuedProcess.id-1].id, process_table[DequeuedProcess.id-1].start_memory_address,getRootSize(process_table[DequeuedProcess.id-1].memsize)+process_table[DequeuedProcess.id-1].start_memory_address-1);
+                                    waitTime=getClk()-process_table[DequeuedProcess.id-1].arrival_time;
+                                    write_schedulerlog_process_started(fptr, getClk(), process_table[DequeuedProcess.id-1].id, process_table[DequeuedProcess.id-1].arrival_time, process_table[DequeuedProcess.id-1].running_time, process_table[DequeuedProcess.id-1].remaining_time, waitTime);
                                 }
-                                perror("Error in execlp");
-                                exit(EXIT_FAILURE);
+                                else
+                                {
+                                    printf("not enough memmory\n");
+                                    break;
+                                }                           
                             }
                             else
                             {
+                                Queue_Dequeue_processData(MLFQ[counter], &DequeuedProcess);
+                                printf("Continuing to Execute process %d with remaining time %d\n", DequeuedProcess.id, process_table[DequeuedProcess.id-1].remaining_time);
+                            }
+                            if (process_table[DequeuedProcess.id-1].remaining_time < quantum-LocalRunTime) // to set the runtime to be sent to the Process forked
+                            {
+                                SentRunTime = process_table[DequeuedProcess.id-1].remaining_time;
+                            }
+                            else
+                            {
+                                SentRunTime = quantum;
+                            }
+                            int process_pid;
+                            if(DequeuedProcess.runningtime==process_table[DequeuedProcess.id-1].remaining_time) // to check id the process is running for the first time to fork it 
+                            {
+                                int process_pid = fork();
+                                process_table[DequeuedProcess.id-1].pid=process_pid;
+                                if (process_pid < 0)
+                                {
+                                    perror("Error in forking the process");
+                                    continue;
+                                }
+                                if (process_pid == 0)
+                                {
+                                    char running_time[10];
+                                    snprintf(running_time, sizeof(running_time), "%d", DequeuedProcess.runningtime);
+                                    if(process_table[DequeuedProcess.id-1].remaining_time==process_table[DequeuedProcess.id-1].running_time)
+                                    {
+                                        execl("process.out", "process.out", running_time, NULL);
+                                    }
+                                    perror("Error in execlp");
+                                    exit(EXIT_FAILURE);
+                                }
+                                else
+                                {
+                                    //sleep(SentRunTime);
+                                    int sleep=getClk()+SentRunTime;
+                                    while(getClk()<sleep){}
+                                    kill(process_pid, SIGSTOP); // actualy stops the process
+                                    process_table[DequeuedProcess.id-1].remaining_time -= SentRunTime; // decrementing the remaining run time
+                                    printf("A process has been stopped at time %d with remaining time %d\n", getClk(), process_table[DequeuedProcess.id-1].remaining_time);
+                                }
+                            }
+                            else // the process ran before so will not fork will SIGCONT to continue only
+                            {
+                                printf("the process is existing will continue its Starting Time is %d\n",getClk());
+                                waitTime = getClk() - process_table[DequeuedProcess.id-1].arrival_time - process_table[DequeuedProcess.id-1].running_time + process_table[DequeuedProcess.id-1].remaining_time;
+                                write_schedulerlog_process_resumed(fptr, getClk(), process_table[DequeuedProcess.id-1].id, process_table[DequeuedProcess.id-1].arrival_time, process_table[DequeuedProcess.id-1].running_time, process_table[DequeuedProcess.id-1].remaining_time, waitTime);
+                                int stat_loc;
+                                kill(process_table[DequeuedProcess.id-1].pid, SIGCONT);
                                 //sleep(SentRunTime);
                                 int sleep=getClk()+SentRunTime;
                                 while(getClk()<sleep){}
-                                kill(process_pid, SIGSTOP); // actualy stops the process
+                                kill(process_table[DequeuedProcess.id-1].pid, SIGSTOP);
                                 process_table[DequeuedProcess.id-1].remaining_time -= SentRunTime; // decrementing the remaining run time
                                 printf("A process has been stopped at time %d with remaining time %d\n", getClk(), process_table[DequeuedProcess.id-1].remaining_time);
                             }
-                        }
-                        else // the process ran before so will not fork will SIGCONT to continue only
-                        {
-                            printf("the process is existing will continue its Starting Time is %d\n",getClk());
-                            waitTime = getClk() - process_table[DequeuedProcess.id-1].arrival_time - process_table[DequeuedProcess.id-1].running_time + process_table[DequeuedProcess.id-1].remaining_time;
-                            write_schedulerlog_process_resumed(fptr, getClk(), process_table[DequeuedProcess.id-1].id, process_table[DequeuedProcess.id-1].arrival_time, process_table[DequeuedProcess.id-1].running_time, process_table[DequeuedProcess.id-1].remaining_time, waitTime);
-                            int stat_loc;
-                            kill(process_table[DequeuedProcess.id-1].pid, SIGCONT);
-                            //sleep(SentRunTime);
-                            int sleep=getClk()+SentRunTime;
-                            while(getClk()<sleep){}
-                            kill(process_table[DequeuedProcess.id-1].pid, SIGSTOP);
-                            process_table[DequeuedProcess.id-1].remaining_time -= SentRunTime; // decrementing the remaining run time
-                            printf("A process has been stopped at time %d with remaining time %d\n", getClk(), process_table[DequeuedProcess.id-1].remaining_time);
-                        }
-                        if (process_table[DequeuedProcess.id-1].remaining_time > 0) // to return the unfinished process to the queue in the lower level
-                        {
-                            printf("the process did not finish and is geting relegated\n");
-                            waitTime = getClk() - process_table[DequeuedProcess.id-1].arrival_time - process_table[DequeuedProcess.id-1].running_time + process_table[DequeuedProcess.id-1].remaining_time;
-                            write_schedulerlog_process_Stoped(fptr, getClk(), process_table[DequeuedProcess.id-1].id, process_table[DequeuedProcess.id-1].arrival_time, process_table[DequeuedProcess.id-1].running_time, process_table[DequeuedProcess.id-1].remaining_time, waitTime);
-                            if(counter==10)
+                            if (process_table[DequeuedProcess.id-1].remaining_time > 0) // to return the unfinished process to the queue in the lower level
                             {
-                                Queue_Enqueue_processData(MLFQ[counter], DequeuedProcess);
+                                printf("the process did not finish and is geting relegated\n");
+                                waitTime = getClk() - process_table[DequeuedProcess.id-1].arrival_time - process_table[DequeuedProcess.id-1].running_time + process_table[DequeuedProcess.id-1].remaining_time;
+                                write_schedulerlog_process_Stoped(fptr, getClk(), process_table[DequeuedProcess.id-1].id, process_table[DequeuedProcess.id-1].arrival_time, process_table[DequeuedProcess.id-1].running_time, process_table[DequeuedProcess.id-1].remaining_time, waitTime);
+                                if(counter==10)
+                                {
+                                    Queue_Enqueue_processData(MLFQ[counter], DequeuedProcess);
+                                }
+                                else
+                                {
+                                    printf("relegating process\n");
+                                    Queue_Enqueue_processData(MLFQ[counter + 1], DequeuedProcess);
+                                }
+                                if(IsStuck(MLFQ)&&counter==10&&MLFQ[10]->count!=0)
+                                {
+                                    processData temp;
+                                    int numero=MLFQ[counter]->count;
+                                    for(int i=0;i<numero;i++)
+                                    {
+                                        Queue_Dequeue_processData(MLFQ[10],&temp);
+                                        EnqueueInCorrectQueue(MLFQ,temp);
+                                    }
+                                }
                             }
                             else
                             {
-                                printf("relegating process\n");
-                                Queue_Enqueue_processData(MLFQ[counter + 1], DequeuedProcess);
+                                PCB* temp=&process_table[DequeuedProcess.id-1];
+                                printf("the process did finish and is geting finalised\n");
+                                finalize_pcb(temp ,getClk());
+                                deallocateMemoryBlock(*temp,MemoryTree);
+                                write_memorylog_freed(fmemoryptr,getClk(),process_table[DequeuedProcess.id-1].memsize, process_table[DequeuedProcess.id-1].id, process_table[DequeuedProcess.id-1].start_memory_address,getRootSize(process_table[DequeuedProcess.id-1].memsize)+process_table[DequeuedProcess.id-1].start_memory_address-1);
+                                waitTime = getClk() - process_table[DequeuedProcess.id-1].arrival_time - process_table[DequeuedProcess.id-1].running_time + process_table[DequeuedProcess.id-1].remaining_time;
+                                update_cpu_state(&cpu, process_table[DequeuedProcess.id-1].weighted_turnaround_time, waitTime);                              
+                                write_schedulerlog_process_finished(fptr, getClk(), process_table[DequeuedProcess.id-1].id, process_table[DequeuedProcess.id-1].arrival_time, process_table[DequeuedProcess.id-1].running_time, process_table[DequeuedProcess.id-1].remaining_time, waitTime, process_table[DequeuedProcess.id-1].turnaround_time, process_table[DequeuedProcess.id-1].weighted_turnaround_time);                         
                             }
-                            if(IsStuck(MLFQ)&&counter==10&&MLFQ[10]->count!=0)
-                            {
-                                processData temp;
-                                int numero=MLFQ[counter]->count;
-                                for(int i=0;i<numero;i++)
-                                {
-                                    Queue_Dequeue_processData(MLFQ[10],&temp);
-                                    EnqueueInCorrectQueue(MLFQ,temp);
-                                }
-                            }
+                            LocalRunTime += SentRunTime;
+                        
                         }
                         else
                         {
-                            PCB* temp=&process_table[DequeuedProcess.id-1];
-                            printf("the process did finish and is geting finalised\n");
-                            finalize_pcb(temp ,getClk());
-                            waitTime = getClk() - process_table[DequeuedProcess.id-1].arrival_time - process_table[DequeuedProcess.id-1].running_time + process_table[DequeuedProcess.id-1].remaining_time;
-                            update_cpu_state(&cpu, process_table[DequeuedProcess.id-1].weighted_turnaround_time, waitTime);                              
-                            write_schedulerlog_process_finished(fptr, getClk(), process_table[DequeuedProcess.id-1].id, process_table[DequeuedProcess.id-1].arrival_time, process_table[DequeuedProcess.id-1].running_time, process_table[DequeuedProcess.id-1].remaining_time, waitTime, process_table[DequeuedProcess.id-1].turnaround_time, process_table[DequeuedProcess.id-1].weighted_turnaround_time);                         
+                            break;
                         }
-                        LocalRunTime += SentRunTime;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                    PCBUpdateCounter++;
-                } while (LocalRunTime < quantum && LocalRunTime != 0);
+                        PCBUpdateCounter++;
+                    } while (LocalRunTime < quantum && LocalRunTime != 0);
             }
             if (LocalRunTime>=quantum)
             {
@@ -254,6 +276,7 @@ void ImplementMLFQ(int msgqueue_id, int quantum, int num_of_processes, Queue_pro
     {
         fclose(fptr);
     }
+    fclose(fmemoryptr);
     finalize_cpu_state(&cpu, num_of_processes, freetime, finish_time);
     write_schedulerprf(cpu.cpu_utilization, cpu.avg_wta, cpu.avg_waiting);
     free(process_table);

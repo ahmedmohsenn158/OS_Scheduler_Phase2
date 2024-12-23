@@ -55,6 +55,7 @@ struct PCB initialize_pcb_RR(processData process,int starttime){
     pcb.response_time=0;
     pcb.turnaround_time=0;
     pcb.weighted_turnaround_time=0;
+    pcb.memsize=process.memsize;
 
     return pcb;
 }

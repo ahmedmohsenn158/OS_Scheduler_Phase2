@@ -190,6 +190,19 @@ void QueueDisplay_processData(Queue_processData *q) {
 }
 
 
+int Queue_Peek_processData(Queue_processData* q, processData* item) 
+{
+    if (q == NULL || q->Head == NULL) {
+        return 0; 
+    }
+
+    *item = q->Head->Data;
+
+    return 1;
+}
+
+
+
 void DestroyQueue(Queue* q) {
     Node* current = q->Head;
     while (current != NULL) {
