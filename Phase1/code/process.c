@@ -4,6 +4,7 @@
 /* Modify this file as needed*/
 atomic_int remainingtime;
 int cycle_time;
+int time_diff;
 void handler(int signum);
 
 int main(int agrc, char *argv[])
@@ -19,11 +20,13 @@ int main(int agrc, char *argv[])
 
     while (remainingtime > 0)
     {
-        while(getClk() == cycle_time){
-            continue;
-        }
+        while (time_diff == 0)
+            time_diff = cycle_time - getClk();
+
         atomic_fetch_sub(&remainingtime, 1);
         cycle_time = getClk();
+        time_diff = 0;
+
         // remainingtime--;
         // sleep(1);
     }
