@@ -12,5 +12,3 @@ At time 44 process 5 started arr 22 total 7 remain 7 wait 22
 At time 51 process 5 finished arr 22 total 7 remain 0 wait 22 TA 29.00 WTA 4.14
 At time 51 process 1 resumed arr 4 total 11 remain 8 wait 44
 At time 59 process 1 finished arr 4 total 11 remain 0 wait 44 TA 55.00 WTA 5.00
-At time 59 process 6 started arr 30 total 30 remain 30 wait 29
-At time 89 process 6 finished arr 30 total 30 remain 0 wait 29 TA 59.00 WTA 1.97

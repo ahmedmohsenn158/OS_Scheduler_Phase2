@@ -8,5 +8,3 @@ At time 44 freed 216 bytes from process 2 from 256 to 511
 At time 44 allocated 34 bytes for process 5 from 256 to 319 
 At time 51 freed 34 bytes from process 5 from 256 to 319 
 At time 59 freed 197 bytes from process 1 from 0 to 255 
-At time 59 allocated 200 bytes for process 6 from 0 to 255 
-At time 89 freed 200 bytes from process 6 from 0 to 255 

@@ -2,7 +2,7 @@
 #include <stdatomic.h>
 
 /* Modify this file as needed*/
-atomic_int remainingtime;
+int remainingtime;
 int cycle_time;
 int time_diff;
 void handler(int signum);
@@ -23,7 +23,7 @@ int main(int agrc, char *argv[])
         while (time_diff == 0)
             time_diff = cycle_time - getClk();
 
-        atomic_fetch_sub(&remainingtime, 1);
+        remainingtime--;
         cycle_time = getClk();
         time_diff = 0;
 
