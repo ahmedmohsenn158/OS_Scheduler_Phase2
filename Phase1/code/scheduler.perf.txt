@@ -1,3 +1,9 @@
+<<<<<<< HEAD
 CPU utilization=91.53%
 Avg WTA=6.88
 Avg Waiting=26.00
+=======
+CPU utilization=93.22%
+Avg WTA=6.59
+Avg Waiting=24.80
+>>>>>>> bec04c4c5f9031baf0545397e83607d69213a447
