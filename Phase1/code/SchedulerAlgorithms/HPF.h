@@ -105,7 +105,7 @@ void HPF_Execute(PriQueue* ProcessQueue, int msgqueue_id, int process_count)
             int status;
             if(waitpid(running_process->pid, &status, WNOHANG) == running_process->pid){
                 // TODO: update cpu state
-                usleep(600000);
+                usleep(500000);
                 finalize_pcb(running_process, getClk());
                 update_cpu_state(&cpu, running_process->weighted_turnaround_time, (running_process->turnaround_time - running_process->running_time));
                 write_schedulerlog_process_finished(fptr, getClk(), 
